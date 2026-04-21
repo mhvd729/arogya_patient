@@ -1379,8 +1379,8 @@ function buildAbout(){
 /* ═══════════════════════════════════════════
    ACTION HANDLERS
 ═══════════════════════════════════════════ */
-window.setTab=t=>{APP.tab=t;APP.screen=null;APP.search="";APP.showSortSidebar=false;render();}
-window.setScreen=s=>{APP.screen=s;APP.showSortSidebar=false;render();}
+window.setTab=t=>{APP.tab=t;APP.screen=null;APP.search="";APP.showSortSidebar=false;window.scrollTo(0,0);render();}
+window.setScreen=s=>{APP.screen=s;APP.showSortSidebar=false;window.scrollTo(0,0);render();}
 window.goDoc=id=>{const d=DOCTORS.find(x=>x.id===id);if(d){APP.selDoc=d;APP.selSlot=null;APP.booked=false;APP.screen="booking";render();}}
 window.openMap=id=>{APP.mapDoc=id?DOCTORS.find(x=>x.id===id)||null:null;APP.screen="map";APP.mapMode='clinics';render();}
 window.setFamIdx=i=>{APP.famIdx=i;render();}
@@ -1401,7 +1401,7 @@ window.confirmBooking=()=>{
 window.pinDigit=(i,val)=>{
   APP.vaultPinVal[i]=val;APP.vaultPin=APP.vaultPinVal.join('');APP.pinErr=false;
   const el=document.getElementById('pin'+i);if(el){el.classList.toggle('filled',!!val);el.classList.remove('err');}
-  if(val&&i<3){const n=document.getElementById('pin'+(i+1));if(n)setTimeout(()=>n.focus(),10);}
+  if(val&&i<3){const n=document.getElementById('pin'+(i+1));if(n)n.focus();}
   if(APP.vaultPin.length===4)setTimeout(()=>unlockVault(),120);
 };
 window.pinKeydown=(e,i)=>{
@@ -1431,32 +1431,50 @@ window.toggleLiveTracking=()=>{
 window.generateAISummary=async()=>{
   APP.aiLoading=true;APP.aiSummary=null;APP.aiError=null;render();
   const fam=FAMILY[APP.famIdx];
-  const meds=[...new Set(APP.records.filter(r=>r.medicines&&r.medicines.length).flatMap(r=>r.medicines))];
-  const prompt=`You are a clinical AI assistant for Arogya Health App. Generate a professional one-page health summary for a doctor's consultation.
-PATIENT: ${fam.name}, Age ${fam.age}, Blood Group ${fam.blood}
-ALLERGIES: Penicillin (prominently flag)
-MEDICAL HISTORY:
-1. Kidney Stones — Treated Jan 2026. Follow-up ultrasound KUB due April 26 2026
-2. Bilateral Myopia — Right -2.25/-0.50, Left -2.50/-0.75. Blue-cut lenses Mar 2026
-3. Hairline Knee Fracture (patella) — Nov 2025. Physiotherapy ongoing
-RECORDS: ${APP.records.map(r=>`[${r.type}] ${r.title} — ${r.doctor}, ${r.date}${r.note?' | '+r.note.slice(0,60)+'...':''}`).join('; ')}
-CURRENT MEDS: ${meds.join(', ')||'None recorded'}
-VITALS: HR 76bpm, BP 122/80, Sugar 97mg/dL, SpO2 98%
-Generate with sections: PATIENT OVERVIEW · ALLERGIES & CONTRAINDICATIONS · ACTIVE CONDITIONS · RECENT INVESTIGATIONS · MEDICATIONS · VITALS · FOLLOW-UPS DUE. Clinical, concise, under 320 words.`;
-  try{
-    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1400,messages:[{role:"user",content:prompt}]})});
-    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(`API Error ${resp.status}: ${err.error?.message||'Check connection'}`);}
-    const data=await resp.json();
-    if(data.error)throw new Error(data.error.message||'AI error');
-    const text=(data.content||[]).map(i=>i.text||'').filter(Boolean).join('\n').trim();
-    if(!text)throw new Error('Empty response from AI');
-    APP.aiSummary=text;
-  }catch(e){APP.aiError=e.message||'Unable to connect to AI. Check internet connection.';}
-  APP.aiLoading=false;render();
+  
+  // Simulated AI Processing Delay (1.5 seconds)
+  setTimeout(() => {
+    const summaryText = `PATIENT OVERVIEW
+Name: ${fam.name} | Age: ${fam.age} | Blood Group: ${fam.blood}
+Overall Health Score: ${fam.score}
+
+🚨 ALLERGIES & CONTRAINDICATIONS
+• PENICILLIN (Severe) - Do not prescribe!
+
+⚕️ ACTIVE CONDITIONS
+• Kidney Stones (History, Jan 2026)
+• Bilateral Myopia (-2.25 RE / -2.50 LE)
+• Hairline Knee Fracture (Patella, Nov 2025)
+
+📋 RECENT INVESTIGATIONS
+• CBC (Feb 2026): Hb 13.8 g/dL. Iron borderline low.
+• Urine Routine (Jan 2026): Calcium 320mg/24hr (Elevated). RBC 8-10/hpf.
+• Knee X-Ray (Nov 2025): Medial patella hairline fracture.
+
+💊 CURRENT MEDICATIONS
+• Tamsulosin 0.4mg & Deflazacort 6mg (Kidney)
+• Refresh Tears / Systane Ultra (Eye)
+• Ibuprofen 400mg / Calcium D3 (Knee)
+• Iron + Folic Acid
+
+🩺 LATEST VITALS
+• Heart Rate: 76 bpm (Stable)
+• Blood Pressure: 122/80 mmHg (Good)
+• Blood Sugar: 97 mg/dL (Good)
+• SpO2: 98% (Good)
+
+📅 FOLLOW-UPS DUE
+• Ultrasound KUB (Kidney): Due April 26, 2026
+• Routine Vision Check: Due Mar 2027`;
+
+    APP.aiSummary = summaryText;
+    APP.aiLoading = false;
+    render();
+  }, 1500);
 };
 window.copyAISummary=()=>{if(!APP.aiSummary)return;if(navigator.clipboard)navigator.clipboard.writeText(APP.aiSummary).then(()=>showToast('Summary copied ✓')).catch(()=>{});else showToast('Select and copy the text manually');}
 window.sendOTP=()=>{if(APP.loginPhone.length!==10){showToast('Enter valid 10-digit number');return;}APP.loginOtpSent=true;APP.loginStep=3;APP.loginOtp="";render();setTimeout(()=>document.getElementById('otp0')?.focus(),200);}
-window.otpDigit=(i,val)=>{const arr=(APP.loginOtp||'').split('');arr[i]=val;APP.loginOtp=arr.join('').slice(0,6);if(val&&i<5){const n=document.getElementById('otp'+(i+1));if(n)setTimeout(()=>n.focus(),10);}};
+window.otpDigit=(i,val)=>{const arr=(APP.loginOtp||'').split('');arr[i]=val;APP.loginOtp=arr.join('').slice(0,6);if(val&&i<5){const n=document.getElementById('otp'+(i+1));if(n)n.focus();}};
 window.otpKey=(e,i)=>{if(e.key==="Backspace"){const arr=(APP.loginOtp||'').split('');arr[i]='';APP.loginOtp=arr.join('');const el=document.getElementById('otp'+i);if(el)el.value='';if(i>0){const p=document.getElementById('otp'+(i-1));if(p)p.focus();}}};
 window.verifyOTP=()=>{const entered=(APP.loginOtp||'').replace(/\s/g,'');if(entered==='123456'){if(APP.isNewUser){APP.loginStep=4;render();setTimeout(()=>document.getElementById('nameInput')?.focus(),200);}else{APP.loginName=APP.loginName||'Avneesh Pathak';APP.loginAge=APP.loginAge||'19';APP.loginBlood=APP.loginBlood||'B+';APP.loggedIn=true;render();}}else{showToast('❌ Wrong OTP. Hint: 123456');}};
 window.completeProfile=()=>{if(!APP.loginName||!APP.loginAge){showToast('Please fill all fields');return;}FAMILY[0].name=APP.loginName;FAMILY[0].age=parseInt(APP.loginAge)||19;APP.loggedIn=true;render();setTimeout(()=>showToast('Welcome to Arogya, '+APP.loginName+'! 🎉'),400);}
