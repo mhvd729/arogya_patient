@@ -1361,8 +1361,8 @@ window.goDoc=id=>{const d=DOCTORS.find(x=>x.id===id);if(d){APP.selDoc=d;APP.selS
 window.openMap=id=>{APP.mapDoc=id?DOCTORS.find(x=>x.id===id)||null:null;APP.screen="map";APP.mapMode='clinics';render();}
 window.setFamIdx=i=>{APP.famIdx=i;render();}
 window.gotoSpecialty=sp=>{APP.specFilter=sp;APP.tab="doctors";APP.screen=null;APP.showSortSidebar=false;render();}
-window.setSymInput=v=>{APP.symInput=v;APP.symRes=null;render();}
-window.setMedInput=v=>{APP.medInput=v;APP.medRes=null;APP.medTab='branded';checkMed();}
+window.setSymInput=v=>{APP.symInput=v;const inp=document.getElementById('symInput');if(inp)inp.value=v;APP.symRes=null;render();}
+window.setMedInput=v=>{APP.medInput=v;const inp=document.getElementById('medInput');if(inp)inp.value=v;APP.medRes=null;APP.medTab='branded';checkMed();}
 window.openMedOrder=key=>{
   const data=MEDICINES_DB[key];
   if(!data){showToast('Searching prices for '+key+'...');setScreen('ai-medicine');APP.medInput=key;checkMed();return;}
